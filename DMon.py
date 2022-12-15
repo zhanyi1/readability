@@ -52,3 +52,12 @@ class DMon(torch.nn.Module):
         x = self.lin2(x)
         return F.log_softmax(x, dim=-1), sp1 + sp2 + o1 + o2 + c1 + c2
 
+
+    def update_state_dict(self, state_dict):
+        original_state_dict = self.state_dict()
+        loaded_state_dict = dict()
+        for k, v in state_dict.items():
+            if k in original_state_dict.keys():
+                loaded_state_dict[k] = v
+        self.load_state_dict(loaded_state_dict)
+

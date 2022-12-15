@@ -13,7 +13,7 @@ class DataParser(Tap):
     avg_num_nodes: int = 1000
     data_split_ratio: List = [0.6, 0.2, 0.2]   # the ratio of training, validation and testing set for random split
     batch_size: int = 10
-    seed: int = 2
+    seed: int = 1
 
 
 class TrainParser(Tap):
@@ -34,7 +34,6 @@ class ModelParser(Tap):
 
     def process_args(self) -> None:
         self.device = torch.device('cpu')
-
 
 
 
