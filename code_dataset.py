@@ -1457,9 +1457,9 @@ def AddControlByHand(fileName, stmt_node_list):
 
 
 if __name__ == "__main__":
-    N_PATHS_AST = "D:\\Program\\Projects\\源代码表征学习\\Graph-Representation\\Dataset\\Neutral"
-    R_PATHS_AST = "D:\\Program\\Projects\\源代码表征学习\\Graph-Representation\\Dataset\\Readable"
-    U_PATHS_AST = "D:\\Program\\Projects\\源代码表征学习\\Graph-Representation\\Dataset\\Unreadable"
+    N_PATHS_AST = "Data/Neutral"
+    R_PATHS_AST = "Data/Readable"
+    U_PATHS_AST = "Data/Unreadable"
     tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
     model = AutoModel.from_pretrained("microsoft/codebert-base")
     graph_list, target_list, code_filename_list = json_parse_to_graph(N_PATHS_AST, R_PATHS_AST, U_PATHS_AST)

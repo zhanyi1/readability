@@ -63,7 +63,7 @@ def get_cross_dataloader(data_args):
 
         dataloader = dict()
         dataloader['train'] = DataLoader(InputDataset(train_dataset), batch_size=data_args.batch_size, shuffle=True)
-        dataloader['eval'] = DataLoader(InputDataset(val_dataset), batch_size=data_args.batch_size, shuffle=True)
+        dataloader['valid'] = DataLoader(InputDataset(val_dataset), batch_size=data_args.batch_size, shuffle=True)
         dataloader['test'] = DataLoader(InputDataset(test_dataset), batch_size=data_args.batch_size, shuffle=True)
 
         dataloader_list.append(dataloader)
@@ -92,27 +92,27 @@ def get_dataloader(data_args):
     seed = data_args.seed
     batch_size = data_args.batch_size
 
-    train_r, eval_r, test_r = random_split(read, lengths=[int(data_split_ratio[0] * len(read)),
+    train_r, valid_r, test_r = random_split(read, lengths=[int(data_split_ratio[0] * len(read)),
                                                           int(data_split_ratio[1] * len(read)),
                                                           len(read) - int(data_split_ratio[0] * len(read)) - int(data_split_ratio[1] * len(read))],
                                            generator=torch.Generator().manual_seed(seed))
 
-    train_n, eval_n, test_n = random_split(neutral, lengths=[int(data_split_ratio[0] * len(neutral)),
+    train_n, valid_n, test_n = random_split(neutral, lengths=[int(data_split_ratio[0] * len(neutral)),
                                                           int(data_split_ratio[1] * len(neutral)),
                                                           len(neutral) - int(data_split_ratio[0] * len(neutral)) - int(data_split_ratio[1] * len(neutral))],
                                            generator=torch.Generator().manual_seed(seed))
 
-    train_u, eval_u, test_u = random_split(unread, lengths=[int(data_split_ratio[0] * len(unread)),
+    train_u, valid_u, test_u = random_split(unread, lengths=[int(data_split_ratio[0] * len(unread)),
                                                           int(data_split_ratio[1] * len(unread)),
                                                           len(unread) - int(data_split_ratio[0] * len(unread)) - int(data_split_ratio[1] * len(unread))],
                                            generator=torch.Generator().manual_seed(seed))
 
     train = ConcatDataset([train_r, train_n, train_u])
-    eval = ConcatDataset([eval_r, eval_n, eval_u])
+    valid = ConcatDataset([valid_r, valid_n, valid_u])
     test = ConcatDataset([test_r, test_n, test_u])
 
     dataloader = dict()
     dataloader['train'] = DataLoader(train, batch_size=batch_size, shuffle=True)
-    dataloader['eval'] = DataLoader(eval, batch_size=batch_size, shuffle=True)
+    dataloader['valid'] = DataLoader(valid, batch_size=batch_size, shuffle=True)
     dataloader['test'] = DataLoader(test, batch_size=batch_size, shuffle=True)
     return dataloader

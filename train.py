@@ -61,18 +61,18 @@ def train():
         epoch_loss = np.average(loss_list)
         print(f"Train Epoch:{epoch}  |Loss: {epoch_loss:.3f} | Train Acc: {epoch_acc:.3f}")
 
-        # report eval msg
-        eval_state = evaluate_GC(dataloader['eval'], gnnNets, criterion)
-        print(f"Eval Epoch: {epoch} | Loss: {eval_state['loss']:.3f} | Eval Acc: {eval_state['acc']:.3f}")
+        # report valid msg
+        valid_state = test(dataloader['valid'], gnnNets, criterion)
+        print(f"Eval Epoch: {epoch} | Loss: {valid_state['loss']:.3f} | Eval Acc: {valid_state['acc']:.3f}")
 
         # report test msg
-        test_state = evaluate_GC(dataloader['test'], gnnNets, criterion)
+        test_state = test(dataloader['test'], gnnNets, criterion)
         print(f"Test Epoch: {epoch} | Loss: {test_state['loss']:.3f} | Test Acc: {test_state['acc']:.3f}")
 
         # only save the best model
-        is_best = (eval_state['acc'] > best_acc)
+        is_best = (valid_state['acc'] > best_acc)
 
-        if eval_state['acc'] > best_acc:
+        if valid_state['acc'] > best_acc:
             early_stop_count = 0
         else:
             early_stop_count += 1
@@ -81,27 +81,27 @@ def train():
             break
 
         if is_best:
-            best_acc = eval_state['acc']
+            best_acc = valid_state['acc']
             early_stop_count = 0
         if is_best or epoch % train_args.save_epoch == 0:
-            save_best(ckpt_dir, epoch, gnnNets, model_args.model_name, eval_state['acc'], is_best, 666)
+            save_best(ckpt_dir, epoch, gnnNets, model_args.model_name, valid_state['acc'], is_best, 666)
 
     print(f"The best validation accuracy is {best_acc}.")
 
     # report test msg
     checkpoint = torch.load(os.path.join(ckpt_dir, f'{model_args.model_name}_best_666.pth'))
     gnnNets.update_state_dict(checkpoint['net'])
-    test_state = evaluate_GC(dataloader['test'], gnnNets, criterion)
+    test_state = test(dataloader['test'], gnnNets, criterion)
     print(f"Test: | Loss: {test_state['loss']:.3f} | Acc: {test_state['acc']:.3f}")
 
 
-def evaluate_GC(eval_dataloader, gnnNets, criterion):
+def test(valid_dataloader, gnnNets, criterion):
     acc = []
     loss_list = []
     gnnNets.eval()
 
     with torch.no_grad():
-        for data in eval_dataloader:
+        for data in valid_dataloader:
 
             data = data.to(model_args.device)
             pre, _ = gnnNets(data.x, data.edge_index, data.batch)
@@ -112,13 +112,13 @@ def evaluate_GC(eval_dataloader, gnnNets, criterion):
             loss_list.append(loss.item())
             acc.append(prediction.eq(data.y).cpu().numpy())
 
-        eval_state = {'loss': np.average(loss_list),
+        valid_state = {'loss': np.average(loss_list),
                       'acc': np.concatenate(acc, axis=0).mean()}
 
-    return eval_state
+    return valid_state
 
 
-def save_best(ckpt_dir, epoch, gnnNets, model_name, eval_acc, is_best, k_fold):
+def save_best(ckpt_dir, epoch, gnnNets, model_name, valid_acc, is_best, k_fold):
     if is_best:
         print('saving best....')
     else:
@@ -128,7 +128,7 @@ def save_best(ckpt_dir, epoch, gnnNets, model_name, eval_acc, is_best, k_fold):
     state = {
         'net': gnnNets.state_dict(),
         'epoch': epoch,
-        'acc': eval_acc
+        'acc': valid_acc
     }
     pth_name = f"{model_name}_latest_{str(k_fold)}.pth"
     best_pth_name = f'{model_name}_best_{str(k_fold)}.pth'
@@ -192,18 +192,18 @@ def cross_train():
             epoch_loss = np.average(loss_list)
             print(f"Train Epoch:{epoch}  |Loss: {epoch_loss:.3f} | Train Acc: {epoch_acc:.3f}")
 
-            # report eval msg
-            eval_state = evaluate_GC(dataloader['eval'], gnnNets, criterion)
-            print(f"Eval Epoch: {epoch} | Loss: {eval_state['loss']:.3f} | Eval Acc: {eval_state['acc']:.3f}")
+            # report valid msg
+            valid_state = test(dataloader['eval'], gnnNets, criterion)
+            print(f"Eval Epoch: {epoch} | Loss: {valid_state['loss']:.3f} | Eval Acc: {valid_state['acc']:.3f}")
 
             # report test msg
-            test_state = evaluate_GC(dataloader['test'], gnnNets, criterion)
+            test_state = test(dataloader['test'], gnnNets, criterion)
             print(f"Test Epoch: {epoch} | Loss: {test_state['loss']:.3f} | Test Acc: {test_state['acc']:.3f}")
 
             # only save the best model
-            is_best = (eval_state['acc'] > best_acc)
+            is_best = (valid_state['acc'] > best_acc)
 
-            if eval_state['acc'] > best_acc:
+            if valid_state['acc'] > best_acc:
                 early_stop_count = 0
             else:
                 early_stop_count += 1
@@ -212,10 +212,10 @@ def cross_train():
                 break
 
             if is_best:
-                best_acc = eval_state['acc']
+                best_acc = valid_state['acc']
                 early_stop_count = 0
             if is_best or epoch % train_args.save_epoch == 0:
-                save_best(ckpt_dir, epoch, gnnNets, model_args.model_name, eval_state['acc'], is_best, i)
+                save_best(ckpt_dir, epoch, gnnNets, model_args.model_name, valid_state['acc'], is_best, i)
 
         print(f"The best validation accuracy is {best_acc}.")
 
@@ -223,10 +223,10 @@ def cross_train():
         # report test msg
         checkpoint = torch.load(os.path.join(ckpt_dir, f'{model_args.model_name}_best_{str(i)}.pth'))
         gnnNets.update_state_dict(checkpoint['net'])
-        test_state = evaluate_GC(dataloader['test'], gnnNets, criterion)
+        test_state = test(dataloader['test'], gnnNets, criterion)
         print(f"Test: | Loss: {test_state['loss']:.3f} | Acc: {test_state['acc']:.3f}")
         k_fold_acc.append(test_state['acc'])
-        
+
 
     print(k_fold_acc)
     print("average: ", np.average(k_fold_acc))
@@ -237,6 +237,8 @@ def cross_train():
 
 
 if __name__ == "__main__":
+
+    # train()
     cross_train()
 
     # # report test msg
@@ -247,7 +249,7 @@ if __name__ == "__main__":
     # criterion = nn.CrossEntropyLoss()
     # checkpoint = torch.load(os.path.join(ckpt_dir, f'{model_args.model_name}_latest.pth'))
     # gnnNets.update_state_dict(checkpoint['net'])
-    # test_state = evaluate_GC(dataloader['eval'], gnnNets, criterion)
+    # test_state = test(dataloader['valid'], gnnNets, criterion)
     # print(f"Test: | Loss: {test_state['loss']:.3f} | Acc: {test_state['acc']:.3f}")
 
 
