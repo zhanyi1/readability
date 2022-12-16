@@ -14,6 +14,7 @@ class DataParser(Tap):
     data_split_ratio: List = [0.6, 0.2, 0.2]   # the ratio of training, validation and testing set for random split
     batch_size: int = 10
     seed: int = 1
+    k_fold: int = 5
 
 
 class TrainParser(Tap):

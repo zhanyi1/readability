@@ -3,6 +3,7 @@ from torch_geometric.loader import DataLoader
 import torch
 from torch.utils.data import random_split, Subset, ConcatDataset
 import pandas as pd
+from sklearn.model_selection import StratifiedKFold
 
 class InputDataset(TorchDataset):
     def __init__(self, dataset):
@@ -26,12 +27,6 @@ class CodeDataset(TorchDataset):
         return self.dataset[index]
 
 
-
-def get_dataset(dataset_dir):
-    input_dataset = pd.read_pickle(dataset_dir)
-    return InputDataset(input_dataset)
-
-
 def balance_dataset(dataset):
     unread = []
     read = []
@@ -48,8 +43,36 @@ def balance_dataset(dataset):
     return CodeDataset(read), CodeDataset(neutral), CodeDataset(unread)
 
 
+def get_cross_dataloader(data_args):
 
-def get_dataloader(dataset, data_args):
+    dataset = pd.read_pickle(data_args.dataset_dir)
+    skf_1 = StratifiedKFold(n_splits=5)
+    skf_2 = StratifiedKFold(n_splits=4)
+
+    dataloader_list = []
+
+    for _, (train_val_idx, test_idx) in enumerate(skf_1.split(dataset.input, dataset.target)):
+
+        train_val_dataset = dataset.iloc[train_val_idx]
+        test_dataset = dataset.iloc[test_idx]
+
+        for _, (train_idx, val_idx) in enumerate(skf_2.split(train_val_dataset.input, train_val_dataset.target)):
+            train_dataset = train_val_dataset.iloc[train_idx]
+            val_dataset = train_val_dataset.iloc[val_idx]
+            break
+
+        dataloader = dict()
+        dataloader['train'] = DataLoader(InputDataset(train_dataset), batch_size=data_args.batch_size, shuffle=True)
+        dataloader['eval'] = DataLoader(InputDataset(val_dataset), batch_size=data_args.batch_size, shuffle=True)
+        dataloader['test'] = DataLoader(InputDataset(test_dataset), batch_size=data_args.batch_size, shuffle=True)
+
+        dataloader_list.append(dataloader)
+
+    return dataloader_list
+
+
+
+def get_dataloader(data_args):
     """
     Args:
         dataset:
@@ -60,6 +83,9 @@ def get_dataloader(dataset, data_args):
     Returns:
         a dictionary of training, validation, and testing dataLoader
     """
+
+    dataset = pd.read_pickle(data_args.dataset_dir)
+    dataset = InputDataset(dataset)
     read, neutral, unread = balance_dataset(dataset)
 
     data_split_ratio = data_args.data_split_ratio
